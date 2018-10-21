@@ -81,9 +81,9 @@ def find_wine_prefix(executable, max_search_depth: int) -> str:
     return directory
 
 
-def get_prefix_env_variables(prefix: str) -> list:
+def find_prefix_env_variables(prefix: str) -> list:
     try:
-        return _get_env_variables(
+        return _find_env_variables(
             prefix,
             INI_BASENAME,
         )
@@ -92,9 +92,9 @@ def get_prefix_env_variables(prefix: str) -> list:
         return []
 
 
-def get_executable_env_variables(filename: str) -> list:
+def find_executable_env_variables(filename: str) -> list:
     try:
-        return _get_env_variables(
+        return _find_env_variables(
             get_directory(filename),
             filename + INI_SUFFIX,
         )
@@ -103,8 +103,7 @@ def get_executable_env_variables(filename: str) -> list:
         return []
 
 
-# FIXME: Add explanation comments, why is this called `get` etc
-def _get_env_variables(directory: str, env_filename: str) -> list:
+def _find_env_variables(directory: str, env_filename: str) -> list:
     files = [
         get_basename(file)
         for file in get_files_in_directory(directory)
@@ -142,7 +141,7 @@ def main(args):
         execute(
             executable=executable,
             prefix=prefix,
-            env_variables=get_prefix_env_variables(prefix) + get_executable_env_variables(executable)
+            env_variables=find_prefix_env_variables(prefix) + find_executable_env_variables(executable)
         )
     except Exception as e:
         print("ERROR: {}".format(e))
