@@ -93,10 +93,11 @@ def _find_env_variables(directory: str, env_filename: str) -> list:
 
 def read_env_variables(file) -> list:
     config = configparser.RawConfigParser()
+    config.optionxform = str
     config.read(file.name)
     try:
         items = [
-            "{key}={value}".format(key=key.upper(), value=value)
+            "{key}={value}".format(key=key, value=value)
             for (key, value) in config.items("ENV")
         ]
         return items
