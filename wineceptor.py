@@ -14,7 +14,6 @@ def main(args):
         exit(0)
 
     executable = args[1]
-    # executable_is_symlink = is_symlink(executable)
 
     try:
         prefix = find_wine_prefix(executable, max_search_depth=15)
@@ -112,10 +111,6 @@ def execute(executable: str, prefix: str, env_variables: list):
                 env=str.join(" ", env_variables))
     # os.system(command)
     print(command)
-
-
-def is_symlink(file_path: str) -> bool:
-    return os.path.islink(file_path)
 
 
 def get_real_path(executable):
