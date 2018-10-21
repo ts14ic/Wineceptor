@@ -36,13 +36,11 @@ def find_wine_prefix(executable, max_search_depth: int) -> str:
     current_depth = 0
     while current_depth < max_search_depth and not is_home_directory(directory):
         if is_prefix_directory(directory):
-            break
+            return directory
         current_depth += 1
         directory = get_directory(directory)
     else:
         raise LookupError("Could not find a wine prefix, tried with a {} depth".format(max_search_depth))
-
-    return directory
 
 
 def is_prefix_directory(directory):
