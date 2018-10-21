@@ -167,8 +167,8 @@ def execute(*,
                 wine=wine_path,
                 env=str.join(" ", env_variables),
                 params=execution_parameters)
-    # os.system(command)
     print(command)
+    os.system(command)
 
 
 def get_real_path(executable):
