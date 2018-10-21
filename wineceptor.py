@@ -6,6 +6,7 @@ import sys
 
 INI_SUFFIX = ".wineceptor.ini"
 INI_BASENAME = "wineceptor.ini"
+DEFAULT_WINE_PATH = "wine"
 
 
 def main(args):
@@ -21,6 +22,7 @@ def main(args):
         execute(
             executable=executable,
             prefix=prefix,
+            wine_path=find_wine_path(prefix),
             env_variables=find_prefix_env_variables(prefix) + find_executable_env_variables(executable)
         )
     except Exception as e:
@@ -56,6 +58,26 @@ def is_prefix_directory(directory):
         if is_directory(join_file_path(directory, each_directory))
     ]
     return "drive_c" in directories and ".update-timestamp" in files
+
+
+def find_wine_path(prefix: str) -> str:
+    files = [
+        get_basename(file)
+        for file in get_files_in_directory(prefix)
+    ]
+    if INI_BASENAME not in files:
+        return DEFAULT_WINE_PATH
+    with open(join_file_path(prefix, INI_BASENAME)) as file:
+        return read_wine_path(file)
+
+
+def read_wine_path(file) -> str:
+    config = configparser.RawConfigParser()
+    config.read_file(file)
+    try:
+        return config.get("WINE", "path")
+    except configparser.Error:
+        return DEFAULT_WINE_PATH
 
 
 def find_prefix_env_variables(prefix: str) -> list:
@@ -94,7 +116,7 @@ def _find_env_variables(directory: str, env_filename: str) -> list:
 def read_env_variables(file) -> list:
     config = configparser.RawConfigParser()
     config.optionxform = str
-    config.read(file.name)
+    config.read_file(file)
     try:
         items = [
             "{key}={value}".format(key=key, value=value)
@@ -105,10 +127,15 @@ def read_env_variables(file) -> list:
         return []
 
 
-def execute(executable: str, prefix: str, env_variables: list):
-    command = "env WINEPREFIX=\"{prefix}\" {env} wine start /unix \"{executable}\"" \
+def execute(*,
+            executable: str,
+            prefix: str,
+            env_variables: list,
+            wine_path: str):
+    command = "env WINEPREFIX=\"{prefix}\" {env} {wine_path} start /unix \"{executable}\"" \
         .format(prefix=prefix,
                 executable=executable,
+                wine_path=wine_path,
                 env=str.join(" ", env_variables))
     # os.system(command)
     print(command)
