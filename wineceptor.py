@@ -32,8 +32,7 @@ def find_wine_prefix(executable, max_search_depth: int) -> str:
     if max_search_depth < 1:
         raise ValueError("Can't use a search depth less than 1, {} was passed".format(max_search_depth))
 
-    # FIXME: Revert
-    directory = os.getcwd()  # get_directory(executable)
+    directory = get_directory(executable)
     current_depth = 0
     while current_depth < max_search_depth and not is_home_directory(directory):
         if is_prefix_directory(directory):
