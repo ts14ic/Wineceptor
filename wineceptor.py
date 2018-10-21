@@ -38,6 +38,7 @@ def find_wine_prefix(executable, max_search_depth: int) -> str:
         if is_prefix_directory(directory):
             return directory
         current_depth += 1
+        # a directory's directory is same as it's parent directory = go up one level
         directory = get_directory(directory)
     else:
         raise LookupError("Could not find a wine prefix, tried with a {} depth".format(max_search_depth))
