@@ -47,14 +47,14 @@ def find_wine_prefix(executable, max_search_depth: int) -> str:
 
 def is_prefix_directory(directory):
     files = [
-        file
-        for file in get_files_in_directory(directory)
-        if is_file(join_file_path(directory, file))
+        each_file
+        for each_file in get_files_in_directory(directory)
+        if is_file(join_file_path(directory, each_file))
     ]
     directories = [
-        dir
-        for dir in get_files_in_directory(directory)
-        if is_directory(join_file_path(directory, dir))
+        each_directory
+        for each_directory in get_files_in_directory(directory)
+        if is_directory(join_file_path(directory, each_directory))
     ]
     return "drive_c" in directories and ".update-timestamp" in files
 
@@ -101,7 +101,7 @@ def read_env_variables(file) -> list:
             for (key, value) in config.items("ENV")
         ]
         return items
-    except configparser.NoSectionError as e:
+    except configparser.NoSectionError:
         return []
 
 
