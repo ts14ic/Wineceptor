@@ -23,7 +23,8 @@ def main(args):
             executable=executable,
             prefix=prefix,
             wine_path=find_wine_path(prefix),
-            env_variables=find_prefix_env_variables(prefix) + find_executable_env_variables(executable)
+            env_variables=find_prefix_env_variables(prefix) + find_executable_env_variables(executable),
+            execution_parameters=find_execution_parameters(executable),
         )
     except Exception as e:
         print("ERROR: {}".format(e))
@@ -127,16 +128,45 @@ def read_env_variables(file) -> list:
         return []
 
 
+def find_execution_parameters(executable: str) -> str:
+    directory = get_directory(executable)
+    ini_filename = executable + INI_SUFFIX
+
+    files = [
+        get_basename(file)
+        for file in get_files_in_directory(directory)
+    ]
+    if get_basename(ini_filename) not in files:
+        return ""
+    with open(ini_filename) as file:
+        return read_execution_parameters(file)
+
+
+def read_execution_parameters(file) -> str:
+    config = configparser.RawConfigParser()
+    config.read_file(file)
+    try:
+        params = [
+            param
+            for (_, param) in config.items("EXEC_PARAMS")
+        ]
+        return str.join(" ", params)
+    except configparser.Error:
+        return ""
+
+
 def execute(*,
             executable: str,
             prefix: str,
             env_variables: list,
-            wine_path: str):
-    command = "env WINEPREFIX=\"{prefix}\" {env} {wine_path} start /unix \"{executable}\"" \
+            wine_path: str,
+            execution_parameters: str):
+    command = "env WINEPREFIX=\"{prefix}\" {env} {wine} start /unix \"{exe}\" {params}" \
         .format(prefix=prefix,
-                executable=executable,
-                wine_path=wine_path,
-                env=str.join(" ", env_variables))
+                exe=executable,
+                wine=wine_path,
+                env=str.join(" ", env_variables),
+                params=execution_parameters)
     # os.system(command)
     print(command)
 
