@@ -11,7 +11,7 @@ INI_BASENAME = "wineceptor.ini"
 def main(args):
     if len(args) < 2:
         print("Usage: {} file.exe".format(args[0]))
-        exit(0)
+        exit(code=0)
 
     executable = args[1]
 
@@ -25,6 +25,7 @@ def main(args):
         )
     except Exception as e:
         print("ERROR: {}".format(e))
+        exit(code=-1)
 
 
 def find_wine_prefix(executable, max_search_depth: int) -> str:
