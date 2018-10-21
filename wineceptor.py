@@ -8,59 +8,24 @@ INI_SUFFIX = ".wineceptor.ini"
 INI_BASENAME = "wineceptor.ini"
 
 
-def is_symlink(file_path: str) -> bool:
-    return os.path.islink(file_path)
+def main(args):
+    if len(args) < 2:
+        print("Usage: {} file.exe".format(args[0]))
+        exit(0)
 
+    executable = args[1]
+    # executable_is_symlink = is_symlink(executable)
 
-def get_directory(file_path: str) -> str:
-    return os.path.dirname(file_path)
+    try:
+        prefix = find_wine_prefix(executable, max_search_depth=15)
 
-
-def get_basename(file_path: str) -> str:
-    return os.path.basename(file_path)
-
-
-def get_files_in_directory(directory: str) -> list:
-    return os.listdir(directory)
-
-
-def is_file(path: str) -> bool:
-    return os.path.isfile(path)
-
-
-def is_directory(path: str) -> bool:
-    return os.path.isdir(path)
-
-
-def is_home_directory(directory):
-    return directory == os.path.expanduser("~")
-
-
-def join_file_path(prefix, filename):
-    return os.path.join(prefix, filename)
-
-
-def execute(executable: str, prefix: str, env_variables: list):
-    command = "env WINEPREFIX=\"{prefix}\" {env} wine start /unix \"{executable}\"" \
-        .format(prefix=prefix,
-                executable=executable,
-                env=str.join(" ", env_variables))
-    # os.system(command)
-    print(command)
-
-
-def is_prefix_directory(directory):
-    files = [
-        file
-        for file in get_files_in_directory(directory)
-        if is_file(join_file_path(directory, file))
-    ]
-    directories = [
-        dir
-        for dir in get_files_in_directory(directory)
-        if is_directory(join_file_path(directory, dir))
-    ]
-    return "drive_c" in directories and ".update-timestamp" in files
+        execute(
+            executable=executable,
+            prefix=prefix,
+            env_variables=find_prefix_env_variables(prefix) + find_executable_env_variables(executable)
+        )
+    except Exception as e:
+        print("ERROR: {}".format(e))
 
 
 def find_wine_prefix(executable, max_search_depth: int) -> str:
@@ -79,6 +44,20 @@ def find_wine_prefix(executable, max_search_depth: int) -> str:
         raise LookupError("Could not find a wine prefix, tried with a {} depth".format(max_search_depth))
 
     return directory
+
+
+def is_prefix_directory(directory):
+    files = [
+        file
+        for file in get_files_in_directory(directory)
+        if is_file(join_file_path(directory, file))
+    ]
+    directories = [
+        dir
+        for dir in get_files_in_directory(directory)
+        if is_directory(join_file_path(directory, dir))
+    ]
+    return "drive_c" in directories and ".update-timestamp" in files
 
 
 def find_prefix_env_variables(prefix: str) -> list:
@@ -127,24 +106,45 @@ def read_env_variables(file) -> list:
         return []
 
 
-def main(args):
-    if len(args) < 2:
-        print("Usage: {} file.exe".format(args[0]))
-        exit(0)
+def execute(executable: str, prefix: str, env_variables: list):
+    command = "env WINEPREFIX=\"{prefix}\" {env} wine start /unix \"{executable}\"" \
+        .format(prefix=prefix,
+                executable=executable,
+                env=str.join(" ", env_variables))
+    # os.system(command)
+    print(command)
 
-    executable = args[1]
-    # executable_is_symlink = is_symlink(executable)
 
-    try:
-        prefix = find_wine_prefix(executable, max_search_depth=15)
+def is_symlink(file_path: str) -> bool:
+    return os.path.islink(file_path)
 
-        execute(
-            executable=executable,
-            prefix=prefix,
-            env_variables=find_prefix_env_variables(prefix) + find_executable_env_variables(executable)
-        )
-    except Exception as e:
-        print("ERROR: {}".format(e))
+
+def get_directory(file_path: str) -> str:
+    return os.path.dirname(file_path)
+
+
+def get_basename(file_path: str) -> str:
+    return os.path.basename(file_path)
+
+
+def get_files_in_directory(directory: str) -> list:
+    return os.listdir(directory)
+
+
+def is_file(path: str) -> bool:
+    return os.path.isfile(path)
+
+
+def is_directory(path: str) -> bool:
+    return os.path.isdir(path)
+
+
+def is_home_directory(directory):
+    return directory == os.path.expanduser("~")
+
+
+def join_file_path(prefix, filename):
+    return os.path.join(prefix, filename)
 
 
 if __name__ == '__main__':
