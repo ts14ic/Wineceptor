@@ -19,15 +19,20 @@ def main(args):
     try:
         prefix = find_wine_prefix(executable, max_search_depth=15)
 
-        run_commands_before_executable(executable)
-        run_executable(
+        commands = get_before_commands(executable)
+        commands += [get_executable_command(
             executable=executable,
             prefix=prefix,
             wine_path=find_wine_path(prefix),
             env_variables=find_prefix_env_variables(prefix) + find_executable_env_variables(executable),
             execution_parameters=find_execution_parameters(executable),
-        )
-        run_commands_after_executable(executable)
+        )]
+        commands += ['env WINEPREFIX="{prefix}" wineserver -w'.format(prefix=prefix)]
+        commands += get_after_commands(executable)
+
+        command = str.join(" && ", commands)
+        print(command)
+        os.system(command)
     except Exception as e:
         print("ERROR: {}".format(e))
         exit(code=-1)
@@ -157,7 +162,7 @@ def read_execution_parameters(file) -> str:
         return ""
 
 
-def run_commands_before_executable(executable: str):
+def get_before_commands(executable: str) -> list:
     directory = get_directory(executable)
     ini_filename = executable + INI_SUFFIX
     files = [
@@ -165,7 +170,7 @@ def run_commands_before_executable(executable: str):
         for file in get_files_in_directory(directory)
     ]
     if get_basename(ini_filename) not in files:
-        return
+        return []
     with open(ini_filename) as file:
         config = configparser.RawConfigParser()
         config.read_file(file)
@@ -174,30 +179,27 @@ def run_commands_before_executable(executable: str):
                 command
                 for (_, command) in config.items("BEFORE")
             ]
-            for command in commands:
-                print("BEFORE:", command)
-                os.system(command)
+            return commands
         except configparser.Error:
-            pass
+            return []
 
 
-def run_executable(*,
-                   executable: str,
-                   prefix: str,
-                   env_variables: list,
-                   wine_path: str,
-                   execution_parameters: str):
+def get_executable_command(*,
+                           executable: str,
+                           prefix: str,
+                           env_variables: list,
+                           wine_path: str,
+                           execution_parameters: str):
     command = "env WINEPREFIX=\"{prefix}\" {env} {wine} start /unix \"{exe}\" {params}" \
         .format(prefix=prefix,
                 exe=executable,
                 wine=wine_path,
                 env=str.join(" ", env_variables),
                 params=execution_parameters)
-    print(command)
-    os.system(command)
+    return command
 
 
-def run_commands_after_executable(executable: str):
+def get_after_commands(executable: str) -> list:
     directory = get_directory(executable)
     ini_filename = executable + INI_SUFFIX
     files = [
@@ -205,7 +207,7 @@ def run_commands_after_executable(executable: str):
         for file in get_files_in_directory(directory)
     ]
     if get_basename(ini_filename) not in files:
-        return
+        return []
     with open(ini_filename) as file:
         config = configparser.RawConfigParser()
         config.read_file(file)
@@ -214,11 +216,9 @@ def run_commands_after_executable(executable: str):
                 command
                 for (_, command) in config.items("AFTER")
             ]
-            for command in commands:
-                print("AFTER:", command)
-                os.system(command)
+            return commands
         except configparser.Error:
-            pass
+            return []
 
 
 def get_real_path(executable):
