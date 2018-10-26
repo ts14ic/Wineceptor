@@ -19,7 +19,7 @@ def main(args):
     try:
         prefix = find_wine_prefix(executable, max_search_depth=15)
 
-        execute(
+        run_executable(
             executable=executable,
             prefix=prefix,
             wine_path=find_wine_path(prefix),
@@ -155,12 +155,12 @@ def read_execution_parameters(file) -> str:
         return ""
 
 
-def execute(*,
-            executable: str,
-            prefix: str,
-            env_variables: list,
-            wine_path: str,
-            execution_parameters: str):
+def run_executable(*,
+                   executable: str,
+                   prefix: str,
+                   env_variables: list,
+                   wine_path: str,
+                   execution_parameters: str):
     command = "env WINEPREFIX=\"{prefix}\" {env} {wine} start /unix \"{exe}\" {params}" \
         .format(prefix=prefix,
                 exe=executable,
