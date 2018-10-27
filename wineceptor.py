@@ -26,7 +26,7 @@ def main(args):
         commands += [get_executable_command(
             executable=executable,
             prefix=prefix,
-            wine_path=find_wine_path(prefix),
+            wine_path=read_wine_path(prefix_config),
             env_variables=read_env_variables(prefix_config) + read_env_variables(executable_config),
             execution_parameters=find_execution_parameters(executable),
         )]
@@ -92,20 +92,7 @@ def find_executable_config(executable: str) -> Optional[configparser.RawConfigPa
     return None
 
 
-def find_wine_path(prefix: str) -> str:
-    files = [
-        get_basename(file)
-        for file in get_files_in_directory(prefix)
-    ]
-    if INI_BASENAME not in files:
-        return DEFAULT_WINE_PATH
-    with open(join_file_path(prefix, INI_BASENAME)) as file:
-        return read_wine_path(file)
-
-
-def read_wine_path(file) -> str:
-    config = configparser.RawConfigParser()
-    config.read_file(file)
+def read_wine_path(config: configparser.RawConfigParser) -> str:
     try:
         return config.get("WINE", "path")
     except configparser.Error:
