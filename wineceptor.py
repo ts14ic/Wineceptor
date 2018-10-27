@@ -73,22 +73,22 @@ def is_prefix_directory(directory):
 
 def find_prefix_config(prefix: str) -> Optional[configparser.RawConfigParser]:
     if INI_BASENAME in get_files_in_directory(prefix):
-        with open(join_file_path(prefix, INI_BASENAME)) as file:
-            config = configparser.ConfigParser()
-            config.optionxform = str
-            config.read_file(file)
-            return config
+        return read_config(join_file_path(prefix, INI_BASENAME))
     return None
+
+
+def read_config(config_filename: str) -> configparser.RawConfigParser:
+    with open(config_filename) as file:
+        config = configparser.ConfigParser()
+        config.optionxform = str
+        config.read_file(file)
+        return config
 
 
 def find_executable_config(executable: str) -> Optional[configparser.RawConfigParser]:
     ini_filename = executable + INI_SUFFIX
     if ini_filename in get_files_in_directory(get_directory(executable)):
-        with open(ini_filename) as file:
-            config = configparser.ConfigParser()
-            config.optionxform = str
-            config.read_file(file)
-            return config
+        return read_config(ini_filename)
     return None
 
 
