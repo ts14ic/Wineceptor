@@ -114,43 +114,32 @@ def read_env_variables(config: configparser.RawConfigParser) -> list:
         return []
 
 
-def read_execution_parameters(config: configparser.RawConfigParser) -> str:
+def read_section_values(config: configparser.RawConfigParser, section: str):
     if config is None:
-        return ""
+        return []
     try:
-        params = [
-            param
-            for (_, param) in config.items("EXEC_PARAMS")
+        commands = [
+            command
+            for (_, command) in config.items(section)
         ]
-        return str.join(" ", params)
+        return commands
     except configparser.Error:
-        return ""
+        return []
+
+
+def read_execution_parameters(config: configparser.RawConfigParser) -> str:
+    params = read_section_values(config, "EXEC_PARAMS")
+    if params:
+        return str.join(" ", params)
+    return ""
 
 
 def read_before_commands(config: configparser.RawConfigParser) -> list:
-    if config is None:
-        return []
-    try:
-        commands = [
-            command
-            for (_, command) in config.items("BEFORE")
-        ]
-        return commands
-    except configparser.Error:
-        return []
+    return read_section_values(config, "BEFORE")
 
 
 def read_after_commands(config: configparser.RawConfigParser) -> list:
-    if config is None:
-        return []
-    try:
-        commands = [
-            command
-            for (_, command) in config.items("AFTER")
-        ]
-        return commands
-    except configparser.Error:
-        return []
+    return read_section_values(config, "AFTER")
 
 
 def get_executable_command(*,
