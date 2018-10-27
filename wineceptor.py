@@ -3,6 +3,7 @@
 import configparser
 import os
 import sys
+from typing import Optional
 
 INI_SUFFIX = ".wineceptor.ini"
 INI_BASENAME = "wineceptor.ini"
@@ -18,13 +19,15 @@ def main(args):
 
     try:
         prefix = find_wine_prefix(executable, max_search_depth=15)
+        prefix_config = find_prefix_config(prefix)
+        executable_config = find_executable_config(executable)
 
         commands = get_before_commands(executable)
         commands += [get_executable_command(
             executable=executable,
             prefix=prefix,
             wine_path=find_wine_path(prefix),
-            env_variables=find_prefix_env_variables(prefix) + find_executable_env_variables(executable),
+            env_variables=read_env_variables(prefix_config) + read_env_variables(executable_config),
             execution_parameters=find_execution_parameters(executable),
         )]
         commands += ['env WINEPREFIX="{prefix}" wineserver -w'.format(prefix=prefix)]
@@ -32,7 +35,7 @@ def main(args):
 
         command = str.join(" && ", commands)
         print(command)
-        os.system(command)
+        # os.system(command)
     except Exception as e:
         print("ERROR: {}".format(e))
         exit(code=-1)
@@ -68,6 +71,27 @@ def is_prefix_directory(directory):
     return "drive_c" in directories and ".update-timestamp" in files
 
 
+def find_prefix_config(prefix: str) -> Optional[configparser.RawConfigParser]:
+    if INI_BASENAME in get_files_in_directory(prefix):
+        with open(join_file_path(prefix, INI_BASENAME)) as file:
+            config = configparser.ConfigParser()
+            config.optionxform = str
+            config.read_file(file)
+            return config
+    return None
+
+
+def find_executable_config(executable: str) -> Optional[configparser.RawConfigParser]:
+    ini_filename = executable + INI_SUFFIX
+    if ini_filename in get_files_in_directory(get_directory(executable)):
+        with open(ini_filename) as file:
+            config = configparser.ConfigParser()
+            config.optionxform = str
+            config.read_file(file)
+            return config
+    return None
+
+
 def find_wine_path(prefix: str) -> str:
     files = [
         get_basename(file)
@@ -88,43 +112,9 @@ def read_wine_path(file) -> str:
         return DEFAULT_WINE_PATH
 
 
-def find_prefix_env_variables(prefix: str) -> list:
-    try:
-        return _find_env_variables(
-            prefix,
-            INI_BASENAME,
-        )
-    except LookupError:
-        print("INFO: No env variables found in prefix: " + prefix)
+def read_env_variables(config: configparser.RawConfigParser) -> list:
+    if config is None:
         return []
-
-
-def find_executable_env_variables(filename: str) -> list:
-    try:
-        return _find_env_variables(
-            get_directory(filename),
-            filename + INI_SUFFIX,
-        )
-    except LookupError:
-        print("INFO: No env variables found for file: " + filename)
-        return []
-
-
-def _find_env_variables(directory: str, env_filename: str) -> list:
-    files = [
-        get_basename(file)
-        for file in get_files_in_directory(directory)
-    ]
-    if get_basename(env_filename) not in files:
-        raise LookupError
-    with open(join_file_path(directory, env_filename)) as file:
-        return read_env_variables(file)
-
-
-def read_env_variables(file) -> list:
-    config = configparser.RawConfigParser()
-    config.optionxform = str
-    config.read_file(file)
     try:
         items = [
             "{key}={value}".format(key=key, value=value)
@@ -132,6 +122,7 @@ def read_env_variables(file) -> list:
         ]
         return items
     except configparser.NoSectionError:
+        print("INFO: No env variables found in prefix: ", config)
         return []
 
 
