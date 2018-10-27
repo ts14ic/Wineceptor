@@ -93,6 +93,8 @@ def find_executable_config(executable: str) -> Optional[configparser.RawConfigPa
 
 
 def read_wine_path(config: configparser.RawConfigParser) -> str:
+    if config is None:
+        return DEFAULT_WINE_PATH
     try:
         return config.get("WINE", "path")
     except configparser.Error:
