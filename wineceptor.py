@@ -28,7 +28,7 @@ def main(args):
             prefix=prefix,
             wine_path=read_wine_path(prefix_config),
             env_variables=read_env_variables(prefix_config) + read_env_variables(executable_config),
-            execution_parameters=find_execution_parameters(executable),
+            execution_parameters=read_execution_parameters(executable_config),
         )]
         commands += ['env WINEPREFIX="{prefix}" wineserver -w'.format(prefix=prefix)]
         commands += get_after_commands(executable)
@@ -87,7 +87,7 @@ def read_config(config_filename: str) -> configparser.RawConfigParser:
 
 def find_executable_config(executable: str) -> Optional[configparser.RawConfigParser]:
     ini_filename = executable + INI_SUFFIX
-    if ini_filename in get_files_in_directory(get_directory(executable)):
+    if get_basename(ini_filename) in get_files_in_directory(get_directory(executable)):
         return read_config(ini_filename)
     return None
 
@@ -111,27 +111,12 @@ def read_env_variables(config: configparser.RawConfigParser) -> list:
         ]
         return items
     except configparser.NoSectionError:
-        print("INFO: No env variables found in prefix: ", config)
         return []
 
 
-def find_execution_parameters(executable: str) -> str:
-    directory = get_directory(executable)
-    ini_filename = executable + INI_SUFFIX
-
-    files = [
-        get_basename(file)
-        for file in get_files_in_directory(directory)
-    ]
-    if get_basename(ini_filename) not in files:
+def read_execution_parameters(config: configparser.RawConfigParser) -> str:
+    if config is None:
         return ""
-    with open(ini_filename) as file:
-        return read_execution_parameters(file)
-
-
-def read_execution_parameters(file) -> str:
-    config = configparser.RawConfigParser()
-    config.read_file(file)
     try:
         params = [
             param
