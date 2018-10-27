@@ -22,20 +22,25 @@ def main(args):
         prefix_config = find_prefix_config(prefix)
         executable_config = find_executable_config(executable)
 
+        env_variables = read_env_variables(prefix_config) + read_env_variables(executable_config)
+
         commands = read_before_commands(executable_config)
         commands += [get_executable_command(
             executable=executable,
             prefix=prefix,
             wine_path=read_wine_path(prefix_config),
-            env_variables=read_env_variables(prefix_config) + read_env_variables(executable_config),
+            env_variables=env_variables,
             execution_parameters=read_execution_parameters(executable_config),
         )]
-        commands += ['env WINEPREFIX="{prefix}" wineserver -w'.format(prefix=prefix)]
+        commands += [get_wait_command(
+            prefix=prefix,
+            env_variables=env_variables
+        )]
         commands += read_after_commands(executable_config)
 
         command = str.join(" && ", commands)
         print(command)
-        # os.system(command)
+        os.system(command)
     except Exception as e:
         print("ERROR: {}".format(e))
         exit(code=-1)
@@ -142,12 +147,19 @@ def read_after_commands(config: configparser.RawConfigParser) -> list:
     return read_section_values(config, "AFTER")
 
 
+def get_wait_command(*, prefix: str, env_variables: list) -> str:
+    command = 'env WINEPREFIX="{prefix}" {env} wineserver -w'\
+        .format(prefix=prefix,
+                env=str.join(" ", env_variables))
+    return command
+
+
 def get_executable_command(*,
                            executable: str,
                            prefix: str,
                            env_variables: list,
                            wine_path: str,
-                           execution_parameters: str):
+                           execution_parameters: str) -> str:
     command = "env WINEPREFIX=\"{prefix}\" {env} {wine} start /unix \"{exe}\" {params}" \
         .format(prefix=prefix,
                 exe=executable,
