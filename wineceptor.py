@@ -22,7 +22,7 @@ def main(args):
         prefix_config = find_prefix_config(prefix)
         executable_config = find_executable_config(executable)
 
-        commands = get_before_commands(executable)
+        commands = read_before_commands(executable_config)
         commands += [get_executable_command(
             executable=executable,
             prefix=prefix,
@@ -31,7 +31,7 @@ def main(args):
             execution_parameters=read_execution_parameters(executable_config),
         )]
         commands += ['env WINEPREFIX="{prefix}" wineserver -w'.format(prefix=prefix)]
-        commands += get_after_commands(executable)
+        commands += read_after_commands(executable_config)
 
         command = str.join(" && ", commands)
         print(command)
@@ -127,26 +127,30 @@ def read_execution_parameters(config: configparser.RawConfigParser) -> str:
         return ""
 
 
-def get_before_commands(executable: str) -> list:
-    directory = get_directory(executable)
-    ini_filename = executable + INI_SUFFIX
-    files = [
-        get_basename(file)
-        for file in get_files_in_directory(directory)
-    ]
-    if get_basename(ini_filename) not in files:
+def read_before_commands(config: configparser.RawConfigParser) -> list:
+    if config is None:
         return []
-    with open(ini_filename) as file:
-        config = configparser.RawConfigParser()
-        config.read_file(file)
-        try:
-            commands = [
-                command
-                for (_, command) in config.items("BEFORE")
-            ]
-            return commands
-        except configparser.Error:
-            return []
+    try:
+        commands = [
+            command
+            for (_, command) in config.items("BEFORE")
+        ]
+        return commands
+    except configparser.Error:
+        return []
+
+
+def read_after_commands(config: configparser.RawConfigParser) -> list:
+    if config is None:
+        return []
+    try:
+        commands = [
+            command
+            for (_, command) in config.items("AFTER")
+        ]
+        return commands
+    except configparser.Error:
+        return []
 
 
 def get_executable_command(*,
@@ -162,28 +166,6 @@ def get_executable_command(*,
                 env=str.join(" ", env_variables),
                 params=execution_parameters)
     return command
-
-
-def get_after_commands(executable: str) -> list:
-    directory = get_directory(executable)
-    ini_filename = executable + INI_SUFFIX
-    files = [
-        get_basename(file)
-        for file in get_files_in_directory(directory)
-    ]
-    if get_basename(ini_filename) not in files:
-        return []
-    with open(ini_filename) as file:
-        config = configparser.RawConfigParser()
-        config.read_file(file)
-        try:
-            commands = [
-                command
-                for (_, command) in config.items("AFTER")
-            ]
-            return commands
-        except configparser.Error:
-            return []
 
 
 def get_real_path(executable):
